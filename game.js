@@ -15,6 +15,115 @@ const COLORS = [
   '#ffb74d', // L - orange
 ];
 
+// ---- Skins ----
+// Cada skin define su paleta (índices 1–7, 0 = null), colores de tablero/rejilla
+// (null = usar las variables CSS del tema claro/oscuro) y su función de dibujo.
+function roundRectPath(context, x, y, w, h, r) {
+  context.beginPath();
+  if (context.roundRect) {
+    context.roundRect(x, y, w, h, r);
+    return;
+  }
+  context.moveTo(x + r, y);
+  context.arcTo(x + w, y, x + w, y + h, r);
+  context.arcTo(x + w, y + h, x, y + h, r);
+  context.arcTo(x, y + h, x, y, r);
+  context.arcTo(x, y, x + w, y, r);
+  context.closePath();
+}
+
+function drawBlockRetro(context, px, py, s, color) {
+  context.fillStyle = color;
+  context.fillRect(px + 1, py + 1, s - 2, s - 2);
+  context.fillStyle = 'rgba(255,255,255,0.12)';
+  context.fillRect(px + 1, py + 1, s - 2, Math.max(2, Math.round(s * 0.13)));
+}
+
+function drawBlockNeon(context, px, py, s, color) {
+  const a = context.globalAlpha;
+  context.save();
+  context.shadowColor = color;
+  context.shadowBlur = s * 0.45;
+  context.fillStyle = color;
+  context.globalAlpha = a * 0.25;
+  context.fillRect(px + 2, py + 2, s - 4, s - 4);
+  context.globalAlpha = a;
+  context.strokeStyle = color;
+  context.lineWidth = 2;
+  context.strokeRect(px + 2, py + 2, s - 4, s - 4);
+  context.restore();
+}
+
+function drawBlockPastel(context, px, py, s, color) {
+  const r = s * 0.28;
+  roundRectPath(context, px + 1.5, py + 1.5, s - 3, s - 3, r);
+  context.fillStyle = color;
+  context.fill();
+  context.strokeStyle = 'rgba(60,50,90,0.35)';
+  context.lineWidth = 1.5;
+  context.stroke();
+  // brillo suave
+  roundRectPath(context, px + s * 0.2, py + s * 0.16, s * 0.6, s * 0.18, s * 0.09);
+  context.fillStyle = 'rgba(255,255,255,0.4)';
+  context.fill();
+}
+
+function drawBlockPixel(context, px, py, s, color) {
+  const n = 4;
+  const inner = s - 2;
+  const cell = inner / n;
+  context.fillStyle = color;
+  context.fillRect(px + 1, py + 1, inner, inner);
+  // textura: sub-cuadrados alternos claros/oscuros
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      context.fillStyle = (i + j) % 2 ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.14)';
+      context.fillRect(px + 1 + j * cell, py + 1 + i * cell, cell, cell);
+    }
+  }
+  // bisel: luz arriba/izquierda, sombra abajo/derecha
+  const b = Math.max(2, Math.round(s * 0.1));
+  context.fillStyle = 'rgba(255,255,255,0.55)';
+  context.fillRect(px + 1, py + 1, inner, b);
+  context.fillRect(px + 1, py + 1, b, inner);
+  context.fillStyle = 'rgba(0,0,0,0.45)';
+  context.fillRect(px + 1, py + 1 + inner - b, inner, b);
+  context.fillRect(px + 1 + inner - b, py + 1, b, inner);
+}
+
+const SKINS = {
+  retro: {
+    name: 'Retro',
+    colors: COLORS,
+    bg: null,
+    grid: null,
+    drawBlock: drawBlockRetro,
+  },
+  neon: {
+    name: 'Neón',
+    colors: [null, '#00f0ff', '#ffee00', '#d400ff', '#39ff14', '#ff1744', '#2979ff', '#ff9100'],
+    bg: '#000000',
+    grid: '#1b1b2b',
+    drawBlock: drawBlockNeon,
+  },
+  pastel: {
+    name: 'Pastel',
+    colors: [null, '#a8e6ef', '#fff1a8', '#d9b8f0', '#b5ead7', '#ffb3ba', '#b5c9f5', '#ffd3a5'],
+    bg: null,
+    grid: null,
+    drawBlock: drawBlockPastel,
+  },
+  pixel: {
+    name: 'Pixel art',
+    colors: [null, '#29b6f6', '#fbc02d', '#8e24aa', '#43a047', '#e53935', '#3949ab', '#fb8c00'],
+    bg: null,
+    grid: null,
+    drawBlock: drawBlockPixel,
+  },
+};
+
+let currentSkin = 'retro';
+
 const PIECES = [
   null,
   [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], // I
@@ -158,18 +267,23 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  const skin = SKINS[currentSkin];
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  skin.drawBlock(context, x * size, y * size, size, skin.colors[colorIndex]);
   context.globalAlpha = 1;
 }
 
+function clearCanvas(context, cv) {
+  context.clearRect(0, 0, cv.width, cv.height);
+  const bg = SKINS[currentSkin].bg;
+  if (bg) {
+    context.fillStyle = bg;
+    context.fillRect(0, 0, cv.width, cv.height);
+  }
+}
+
 function drawGrid() {
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
+  ctx.strokeStyle = SKINS[currentSkin].grid || getComputedStyle(document.documentElement).getPropertyValue('--grid').trim();
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
@@ -186,7 +300,7 @@ function drawGrid() {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  clearCanvas(ctx, canvas);
   drawGrid();
 
   // board
@@ -209,7 +323,7 @@ function draw() {
 
 function drawNext() {
   const NB = 30;
-  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  clearCanvas(nextCtx, nextCanvas);
   const shape = next.shape;
   const offX = Math.floor((4 - shape[0].length) / 2);
   const offY = Math.floor((4 - shape.length) / 2);
@@ -322,5 +436,36 @@ themeBtn.addEventListener('click', () => {
   themeBtn.blur(); // evita que Space active el botón durante el juego
 });
 themeBtn.textContent = themeLabel(document.documentElement.getAttribute('data-theme'));
+
+// ---- Selector de skin ----
+const skinSelect = document.getElementById('skin-select');
+
+function applySkin(name) {
+  if (!Object.prototype.hasOwnProperty.call(SKINS, name)) name = 'retro';
+  currentSkin = name;
+  document.documentElement.setAttribute('data-skin', name);
+  skinSelect.value = name;
+  try { localStorage.setItem('skin', name); } catch (e) {}
+  // repintar (no se actualiza solo en pausa o game over)
+  if (board && current) draw();
+  if (next) drawNext();
+}
+
+skinSelect.addEventListener('change', () => {
+  applySkin(skinSelect.value);
+  skinSelect.blur(); // devuelve el control del teclado al juego
+});
+// evita que teclas del juego (flechas, Espacio, P, X) cambien el skin con el select enfocado
+skinSelect.addEventListener('keydown', e => {
+  if (e.key !== 'Tab' && e.key !== 'Enter' && e.key !== 'Escape') e.preventDefault();
+});
+
+(function () {
+  let saved = null;
+  try { saved = localStorage.getItem('skin'); } catch (e) {}
+  currentSkin = Object.prototype.hasOwnProperty.call(SKINS, saved) ? saved : 'retro';
+  document.documentElement.setAttribute('data-skin', currentSkin);
+  skinSelect.value = currentSkin;
+})();
 
 init();
