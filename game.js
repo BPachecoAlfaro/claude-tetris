@@ -41,6 +41,7 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
 let startLevel = 1;
+let gameStartLevel = 1;
 let resumeGuardUntil = 0;
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 
@@ -112,7 +113,7 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.max(startLevel, Math.floor(lines / 10) + 1);
+    level = Math.max(gameStartLevel, Math.floor(lines / 10) + 1);
     dropInterval = intervalForLevel(level);
     updateHUD();
   }
@@ -267,7 +268,9 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
+  gameStartLevel = startLevel;
   level = startLevel;
+  resumeGuardUntil = 0;
   paused = false;
   gameOver = false;
   dropInterval = intervalForLevel(level);
@@ -284,6 +287,7 @@ function init() {
 
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP' || e.code === 'Escape') {
+    if (e.code === 'Escape' && paused && document.activeElement === startLevelSel) return;
     e.preventDefault();
     if (!e.repeat) togglePause();
     return;
@@ -349,7 +353,8 @@ function menuItems() {
 
 // Con el menú abierto solo funciona la navegación del menú; nada llega al juego.
 function handleMenuKey(e) {
-  if (e.code === 'Space') { e.preventDefault(); return; }
+  // Space solo se bloquea sobre el select para que los botones sigan activándose con el teclado
+  if (e.code === 'Space') { if (document.activeElement === startLevelSel) e.preventDefault(); return; }
   if (e.code === 'ArrowUp' || e.code === 'ArrowDown') {
     if (document.activeElement === startLevelSel) return; // el select cambia de valor
     e.preventDefault();
