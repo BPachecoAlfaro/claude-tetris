@@ -184,7 +184,7 @@ kbd {
   color: var(--accent);
 }
 
-#restart-btn {
+#restart-btn, #play-btn, #save-name-btn {
   margin-top: 8px;
   background: var(--accent);
   color: var(--on-accent);
@@ -198,7 +198,7 @@ kbd {
   transition: background 0.15s;
 }
 
-#restart-btn:hover {
+#restart-btn:hover, #play-btn:hover, #save-name-btn:hover {
   background: var(--accent-hover);
 }
 
@@ -220,3 +220,97 @@ kbd {
 #theme-toggle:hover {
   border-color: var(--accent);
 }
+
+/* ---- Records ---- */
+.start-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: var(--accent);
+}
+
+.records {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: 280px;
+}
+
+.records.hidden { display: none; }
+
+.records-title, .new-record-msg {
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: 700;
+  color: var(--label);
+}
+
+.new-record-msg:not(:empty) { color: var(--accent); font-size: 13px; }
+
+.records-empty { font-size: 12px; color: var(--muted); }
+
+.records-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--text);
+  width: 100%;
+}
+
+.records-table th {
+  font-size: 10px;
+  color: var(--label);
+  text-align: left;
+  padding: 2px 6px;
+}
+
+.records-table td {
+  padding: 3px 6px;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.records-table tr.highlight {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+
+.records-stats {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.name-form { display: flex; gap: 6px; }
+.name-form.hidden { display: none; }
+
+#name-input {
+  width: 140px;
+  padding: 6px 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  user-select: text;
+}
+
+#name-input:focus { outline: none; border-color: var(--accent); }
+
+#save-name-btn {
+  margin-top: 0;
+  padding: 6px 14px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-btn:hover { color: var(--danger); }
