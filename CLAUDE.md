@@ -12,12 +12,12 @@ Open `index.html` directly, or serve statically (e.g. `python -m http.server 800
 
 ## Architecture
 
-Everything lives in `game.js` (a single script loaded by `index.html`, using module-level globals — no modules/classes). `index.html` supplies the element IDs the script looks up at load time (`board`, `next-canvas`, `score`, `lines`, `level`, `overlay`, `overlay-title`, `overlay-score`, `restart-btn`); renaming any of them breaks the script.
+Everything lives in `game.js` (a single script loaded by `index.html`, using module-level globals — no modules/classes). `index.html` supplies the element IDs the script looks up at load time (`board`, `next-canvas`, `score`, `lines`, `level`, `overlay`, `overlay-title`, `overlay-score`, `restart-btn`, `pause-menu`, `resume-btn`, `pause-restart-btn`, `controls-btn`, `pause-controls`, `start-level`); renaming any of them breaks the script.
 
 Key points that span several functions:
 
 - **Piece/board encoding**: `PIECES[type]` and `COLORS[type]` are indexed 1–7 (index 0 is `null`). Board cells hold `0` or the piece type index, which doubles as the color index in `drawBlock`.
 - **State flow**: `loop` (rAF, accumulates `dropAccum` against `dropInterval`) and the `keydown` handler both mutate the global `current` piece; locking goes through `lockPiece()` → `merge()` → `clearLines()` (updates score/lines/level/`dropInterval`) → `spawn()`. `spawn()` calls `endGame()` if the new piece collides immediately.
-- **Pause/restart**: `togglePause` cancels/restarts the rAF loop and reuses the same overlay as game over; `init()` fully resets state and is also the restart button handler.
+- **Pause/restart**: `togglePause` (P/Escape) cancels/restarts the rAF loop and shows the separate `#pause-menu` (game over keeps `#overlay`). While `paused`, `handleMenuKey` swallows game keys; after resume `resumeGuardUntil` ignores input for 200ms. `startLevel` (localStorage `startLevel`, 1–10) sets the initial level in `init()` and is the floor in `clearLines()`; `init()` fully resets state and is also the restart button handler.
 - **Board size is duplicated**: `COLS`/`ROWS`/`BLOCK` in `game.js` must match the `width`/`height` attributes of `<canvas id="board">` in `index.html` (currently 300×600). The next-piece preview uses a separate 120×120 canvas with a hardcoded 30px block.
 - Rotation is clockwise only (`rotateCW`) with simple horizontal kicks `[0, -1, 1, -2, 2]` in `tryRotate` (not SRS).
